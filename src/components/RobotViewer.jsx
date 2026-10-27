@@ -2,6 +2,7 @@ import React from "react";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { createRobotRig, getRobotPose } from "../lib/robotRig";
 
 export default function RobotViewer({ active = "assembled" }) {
   const host = useRef(null),
@@ -12,6 +13,12 @@ export default function RobotViewer({ active = "assembled" }) {
     const el = host.current;
     let renderer,
       model,
+      rig,
+      pose,
+      previousActive,
+      visible = true,
+      visibilityObserver,
+      cleanupListeners,
       frame,
       disposed = false,
       observer;
@@ -40,17 +47,11 @@ export default function RobotViewer({ active = "assembled" }) {
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
         renderer.setSize(w, h);
+        if (rig) pose = getRobotPose(rig, activeRef.current, camera.aspect);
       };
       observer = new ResizeObserver(resize);
       observer.observe(el);
       resize();
-      const names = {
-        head: ["Head"],
-        torso: ["Torso", "Pelvis"],
-        arms: ["Arm_L", "Arm_R", "Forearm_L", "Forearm_R", "Hand_L", "Hand_R"],
-        legs: ["Thigh_L", "Thigh_R", "Shin_L", "Shin_R", "Foot_L", "Foot_R"],
-      };
-      const partNames = new Set(Object.values(names).flat());
       const reduced = matchMedia("(prefers-reduced-motion: reduce)");
       new GLTFLoader().load(
         "/assets/robot.glb",
@@ -62,66 +63,88 @@ export default function RobotViewer({ active = "assembled" }) {
             });
             return;
           }
-          model = gltf.scene;
-          const bounds = new THREE.Box3().setFromObject(model),
-            scale = 3.9 / bounds.getSize(new THREE.Vector3()).y;
-          const center = bounds.getCenter(new THREE.Vector3());
-          model.scale.setScalar(scale);
-          model.position.copy(center.multiplyScalar(-scale));
-          const group = new THREE.Group();
-          group.add(model);
-          scene.add(group);
-          model = group;
+          rig = createRobotRig(gltf.scene);
+          model = rig.root;
+          scene.add(model);
           model.traverse((o) => {
             if (o.isMesh) {
               geometries.add(o.geometry);
-              o.material = o.material.clone();
-              let owner = o;
-              while (owner.parent && !partNames.has(owner.name))
-                owner = owner.parent;
-              materials.push({
-                part: owner.name,
-                material: o.material,
-                color: o.material.color.clone(),
-                emissive: o.material.emissive?.clone(),
-              });
+              for (const material of [o.material].flat())
+                materials.push(material);
             }
+          });
+          pose = getRobotPose(rig, activeRef.current, camera.aspect);
+          rig.parts.forEach((part, i) => {
+            part.pivot.position.copy(pose[i].position);
+            part.pivot.scale.setScalar(pose[i].scale);
+            part.pivot.visible = pose[i].visible;
           });
           setStatus("ready");
         },
         undefined,
         () => !disposed && setStatus("error"),
       );
+      const pointer = { x: 0, y: 0 };
+      const onPointerMove = (event) => {
+        const rect = el.getBoundingClientRect();
+        pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+      };
+      const onPointerLeave = () => {
+        pointer.x = 0;
+        pointer.y = 0;
+      };
+      el.addEventListener("pointermove", onPointerMove);
+      el.addEventListener("pointerleave", onPointerLeave);
+      visibilityObserver = new IntersectionObserver(([entry]) => {
+        visible = entry.isIntersecting;
+      });
+      visibilityObserver.observe(el);
+      const clock = new THREE.Clock();
       const render = () => {
         if (disposed) return;
         frame = requestAnimationFrame(render);
-        if (model) {
-          const selected =
-            names[activeRef.current] ||
-            (activeRef.current === "perception"
-              ? names.head
-              : activeRef.current === "controls"
-                ? [...names.arms, ...names.legs]
-                : []);
-          materials.forEach(({ part, material, color, emissive }) => {
-            const focus = selected.includes(part);
-            material.color.lerp(
-              focus ? new THREE.Color("#c5050c") : color,
-              reduced.matches ? 1 : 0.12,
+        const delta = Math.min(clock.getDelta(), 0.05);
+        if (model && visible && !document.hidden) {
+          if (previousActive !== activeRef.current) {
+            previousActive = activeRef.current;
+            pose = getRobotPose(rig, previousActive, camera.aspect);
+          }
+          const blend = reduced.matches ? 1 : 1 - Math.exp(-delta * 8);
+          rig.parts.forEach((part, i) => {
+            const target = pose[i];
+            part.pivot.position.lerp(target.position, blend);
+            const scale = THREE.MathUtils.lerp(
+              part.pivot.scale.x,
+              target.scale,
+              blend,
             );
-            if (emissive)
-              material.emissive.copy(
-                focus ? new THREE.Color("#390000") : emissive,
-              );
+            part.pivot.scale.setScalar(scale);
+            part.pivot.visible = target.visible || scale > 0.015;
           });
-          const target = activeRef.current === "assembled" ? -0.25 : 0.12;
-          model.rotation.y = reduced.matches
-            ? target
-            : THREE.MathUtils.lerp(model.rotation.y, target, 0.055);
+          const assembled = ["assembled", "controls"].includes(
+            activeRef.current,
+          );
+          const yaw = reduced.matches
+            ? -0.12
+            : (assembled ? -0.18 : 0) +
+              Math.sin(clock.elapsedTime * 0.55) * (assembled ? 0.28 : 0.35) +
+              pointer.x * 0.16;
+          model.rotation.y = THREE.MathUtils.lerp(model.rotation.y, yaw, blend);
+          model.rotation.x = THREE.MathUtils.lerp(
+            model.rotation.x,
+            reduced.matches ? 0 : -pointer.y * 0.07,
+            blend,
+          );
           renderer.render(scene, camera);
         }
       };
       render();
+      // Keep event cleanup with the viewer lifetime.
+      cleanupListeners = () => {
+        el.removeEventListener("pointermove", onPointerMove);
+        el.removeEventListener("pointerleave", onPointerLeave);
+      };
     } catch {
       setStatus("error");
     }
@@ -129,7 +152,9 @@ export default function RobotViewer({ active = "assembled" }) {
       disposed = true;
       cancelAnimationFrame(frame);
       observer?.disconnect();
-      materials.forEach(({ material }) => material.dispose());
+      visibilityObserver?.disconnect();
+      cleanupListeners?.();
+      materials.forEach((material) => material.dispose());
       geometries.forEach((g) => g.dispose());
       renderer?.dispose();
       renderer?.domElement.remove();
@@ -139,7 +164,7 @@ export default function RobotViewer({ active = "assembled" }) {
     <div
       className="robot-view"
       role="img"
-      aria-label={`Original WiscoHumanoids robot, ${active === "assembled" ? "assembled view" : active + " systems highlighted"}`}
+      aria-label={`Original WiscoHumanoids robot, ${["assembled", "controls"].includes(active) ? "assembled view" : active + " isolated view"}`}
     >
       <div ref={host} className="canvas-host" />
       {status === "loading" && (

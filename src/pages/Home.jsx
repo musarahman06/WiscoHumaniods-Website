@@ -50,7 +50,9 @@ export default function Home() {
   const [active, setActive] = useState("assembled");
   const story = useRef(null);
   useEffect(() => {
-    const sections = [...story.current.querySelectorAll("article[data-system]")];
+    const sections = [
+      ...story.current.querySelectorAll("article[data-system]"),
+    ];
     let frame;
     const update = () => {
       frame = undefined;
@@ -66,7 +68,9 @@ export default function Home() {
       }, null);
       if (nearest) setActive(nearest.section.dataset.system);
     };
-    const schedule = () => { if (frame === undefined) frame = requestAnimationFrame(update); };
+    const schedule = () => {
+      if (frame === undefined) frame = requestAnimationFrame(update);
+    };
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
     update();
@@ -148,8 +152,8 @@ export default function Home() {
           <em>A world of systems.</em>
         </h2>
         <p className="lead">
-          Scroll through the build. Each system has its own challenge — and a
-          team bringing it to life.
+          Scroll to take the robot apart, system by system. Each part has a team
+          bringing it to life.
         </p>
       </section>
       <section className="system-story section" ref={story}>
@@ -169,15 +173,13 @@ export default function Home() {
                 key={s.id}
                 onClick={() => {
                   setActive(s.id);
-                  document
-                    .getElementById(s.id)
-                    .scrollIntoView({
-                      behavior: matchMedia("(prefers-reduced-motion: reduce)")
-                        .matches
-                        ? "instant"
-                        : "smooth",
-                      block: "center",
-                    });
+                  document.getElementById(s.id).scrollIntoView({
+                    behavior: matchMedia("(prefers-reduced-motion: reduce)")
+                      .matches
+                      ? "instant"
+                      : "smooth",
+                    block: "center",
+                  });
                 }}
               >
                 {String(i + 1).padStart(2, "0")}
@@ -188,7 +190,7 @@ export default function Home() {
             {active === "assembled"
               ? "Assembled view"
               : systems.find((s) => s.id === active)?.label}{" "}
-            / Original model
+            / Original model · Scroll to deconstruct
           </p>
         </div>
         <div className="system-articles">
