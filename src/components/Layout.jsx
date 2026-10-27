@@ -50,14 +50,19 @@ export function PageIntro({ number, label, title, children }) {
 }
 export default function Layout() {
   const [open, setOpen] = useState(false);
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   useEffect(() => {
     setOpen(false);
-    window.scrollTo(0, 0);
+    const frame = requestAnimationFrame(() => {
+      const target = hash && document.getElementById(hash.slice(1));
+      if (target) target.scrollIntoView();
+      else window.scrollTo(0, 0);
+    });
     const title =
       navigation.find(([, path]) => path === pathname)?.[0] || "Page not found";
     document.title = `${title} — WiscoHumanoids`;
-  }, [pathname]);
+    return () => cancelAnimationFrame(frame);
+  }, [pathname, hash]);
   useEffect(() => {
     const close = (e) => {
       if (e.key === "Escape") setOpen(false);

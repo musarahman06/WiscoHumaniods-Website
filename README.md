@@ -12,6 +12,7 @@ npm run dev
 ```
 
 ```sh
+npm test
 npm run build
 npm run preview
 ```
@@ -20,8 +21,8 @@ The production output is `dist/`. This is a static React application. Configure 
 
 ## Pages and behavior
 
-- `/`: original 3D robot, scroll-driven isolated part views, keyboard-accessible system selectors, subteam and join paths.
-- `/subteams`: all eight original subteams with hardware/software/support filters.
+- `/`: original 3D robot and recovered team scenes, nine scroll-driven system sections covering all eight directory teams plus Head & Sensing, keyboard-accessible selectors, subteam and join paths.
+- `/subteams`: all eight original subteams with hardware/software/support filters, a shared interactive 3D showcase, and view-model actions on every team card.
 - `/about`: mission, principles, and original first-year roadmap.
 - `/sponsors`: original sponsor names, sponsorship inquiry, organization ID 35538 with copy feedback.
 - `/outreach`: original gallery, original remote video with native controls, and email contact.
@@ -33,7 +34,9 @@ Shared club links and directory data live in `src/data.js`. Layout, robot render
 
 The public site's HTML, JavaScript bundle, and CSS were inspected before implementation. The GitHub repository supplied by the owner was empty when inspected. There was no original source checkout or package manifest to preserve, so this is a fresh React/Vite reconstruction using the original site's React Router and Three.js approach, with patched dependency releases.
 
-- `public/assets/robot.glb`: original public club model, recovered without modification. The original limbs retain their internal hierarchy. The landing page smoothly isolates and enlarges each part, then restores the assembled model for controls.
+- `public/assets/robot.glb`: original public club model, recovered without modification. The original limbs retain their internal hierarchy. The landing page smoothly isolates each hardware system and restores the complete robot alongside the original VR operator for Controls.
+- `src/lib/originalTeamModels.js`: the original procedural brain, stereo camera/depth scene, VR operator, and calendar/coins, extracted from the public bundle with expanded Three.js aliases. These are the original constructions rather than newly designed substitutes.
+- Manipulation had no separate 3D asset in the original project; it shares the original arms/hands geometry.
 - `public/assets/logo.png`: original club logo.
 - `public/assets/outreach-*.jpg`: original gallery images, resized and compressed for web delivery.
 - Newsreader, Space Grotesk, and IBM Plex Mono: the original font families, loaded from Google Fonts with system fallbacks.
@@ -55,7 +58,9 @@ No authentication feature was exposed in the public club experience. The deploye
 - [ ] Open all five routes directly and refresh each; verify host SPA rewrites.
 - [ ] Check 390px mobile, tablet, and desktop layouts; confirm no horizontal overflow.
 - [ ] Open/close the mobile menu, press Escape, and navigate with the keyboard.
-- [ ] Scroll the robot story and use each system selector; verify the selected part is isolated, its attached segments stay together, and Controls restores the complete robot.
+- [ ] Scroll the robot story and use each system selector; verify the selected part is isolated, its attached segments stay together, and Controls shows the complete robot alongside the original VR operator.
+- [ ] Verify Perception shows the stereo/depth scene, Planning shows the brain, and Operations shows the calendar/coins.
+- [ ] Open every team’s model in the subteam showcase and confirm its associated geometry.
 - [ ] Try reduced motion and a browser without WebGL; verify readable content and the image/model-download fallback.
 - [ ] Filter all subteam categories and confirm 3 hardware, 4 software, and 1 support team.
 - [ ] Copy organization ID 35538 and verify clipboard content and status feedback.

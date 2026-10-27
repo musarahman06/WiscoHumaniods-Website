@@ -4,48 +4,7 @@ import { Link } from "react-router-dom";
 import RobotViewer from "../components/RobotViewer";
 import { Join } from "../components/Layout";
 import { DISCORD } from "../data";
-const systems = [
-  {
-    id: "head",
-    name: "A way to see.",
-    label: "01 / Head & perception",
-    body: "Depth estimation, object detection, and scene understanding turn raw camera frames into a model of the world.",
-    team: "Perception & Vision",
-    tags: ["Stereo vision", "ROS2", "World models"],
-  },
-  {
-    id: "torso",
-    name: "A place to connect.",
-    label: "02 / Torso & power",
-    body: "The central chassis brings the frame, compute, and battery together. An internal spine routes power and data between systems.",
-    team: "Torso",
-    tags: ["Structure", "Power", "Integration"],
-  },
-  {
-    id: "arms",
-    name: "Built to reach.",
-    label: "03 / Arms & hands",
-    body: "Custom manipulators bring hardware and intelligent control together. From tendon routing to grasp planning, every interaction starts here.",
-    team: "Hands & Arms · Manipulation",
-    tags: ["Kinematics", "Machining", "Grasp planning"],
-  },
-  {
-    id: "legs",
-    name: "Finding our footing.",
-    label: "04 / Legs & locomotion",
-    body: "Actuators, dynamics simulations, and gait controllers tackle the challenge of bipedal balance and movement.",
-    team: "Legs & Locomotion",
-    tags: ["Dynamics", "Simulation", "Gait design"],
-  },
-  {
-    id: "controls",
-    name: "Making it all move.",
-    label: "05 / Controls & autonomy",
-    body: "Motion planners translate goals into actions. Feedback control brings those actions to the joints, connecting perception, planning, and movement.",
-    team: "Controls · Planning & Autonomy",
-    tags: ["Feedback", "Motion planning", "C++"],
-  },
-];
+import { landingSystems as systems } from "../landingSystems";
 export default function Home() {
   const [active, setActive] = useState("assembled");
   const story = useRef(null);
@@ -209,7 +168,10 @@ export default function Home() {
                   <span key={t}>{t}</span>
                 ))}
               </div>
-              <Link to="/subteams" className="text-link">
+              <Link
+                to={s.teamId ? `/subteams#${s.teamId}` : "/subteams"}
+                className="text-link"
+              >
                 {s.team} ↗
               </Link>
             </article>

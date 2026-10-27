@@ -2,7 +2,11 @@ import React from "react";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { createRobotRig, getRobotPose } from "../lib/robotRig";
+import {
+  createRobotRig,
+  getRobotPose,
+  animateTeamModels,
+} from "../lib/robotRig";
 
 export default function RobotViewer({ active = "assembled" }) {
   const host = useRef(null),
@@ -22,7 +26,7 @@ export default function RobotViewer({ active = "assembled" }) {
       frame,
       disposed = false,
       observer;
-    const materials = [],
+    const materials = new Set(),
       geometries = new Set();
     try {
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -67,10 +71,10 @@ export default function RobotViewer({ active = "assembled" }) {
           model = rig.root;
           scene.add(model);
           model.traverse((o) => {
-            if (o.isMesh) {
+            if (o.geometry) {
               geometries.add(o.geometry);
               for (const material of [o.material].flat())
-                materials.push(material);
+                materials.add(material);
             }
           });
           pose = getRobotPose(rig, activeRef.current, camera.aspect);
@@ -136,6 +140,12 @@ export default function RobotViewer({ active = "assembled" }) {
             reduced.matches ? 0 : -pointer.y * 0.07,
             blend,
           );
+          animateTeamModels(
+            rig,
+            activeRef.current,
+            clock.elapsedTime,
+            reduced.matches,
+          );
           renderer.render(scene, camera);
         }
       };
@@ -164,12 +174,12 @@ export default function RobotViewer({ active = "assembled" }) {
     <div
       className="robot-view"
       role="img"
-      aria-label={`Original WiscoHumanoids robot, ${["assembled", "controls"].includes(active) ? "assembled view" : active + " isolated view"}`}
+      aria-label={`Original WiscoHumanoids 3D scene, ${active === "assembled" ? "assembled robot" : active === "controls" ? "VR operator and humanoid controls" : active + " system"}`}
     >
       <div ref={host} className="canvas-host" />
       {status === "loading" && (
         <p className="model-status" role="status">
-          Loading original robot model…
+          Loading original 3D models…
         </p>
       )}
       {status === "error" && (

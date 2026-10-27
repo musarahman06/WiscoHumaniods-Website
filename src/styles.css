@@ -1156,3 +1156,79 @@ main:focus {
     transform: none;
   }
 }
+
+/* Original team scenes share one renderer in the directory. */
+.system-controls {
+  flex-wrap: wrap;
+}
+.team-model-showcase {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6vw;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  scroll-margin-top: 0;
+}
+.team-model-view {
+  height: 500px;
+  background: radial-gradient(ellipse at center, #e7e6dc, transparent 70%);
+}
+.team-model-copy h2 {
+  font-size: clamp(36px, 4vw, 60px);
+}
+.team-model-copy > .eyebrow {
+  color: var(--red);
+}
+.team-model-copy .lead {
+  font-size: 21px;
+}
+.team-model-selectors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 28px 0;
+}
+.team-model-selectors button {
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: 4px;
+  padding: 11px 13px;
+  font: 11px var(--ui);
+}
+.team-model-selectors button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.team-model-link {
+  align-self: start;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  padding: 8px 0;
+  margin-bottom: 12px;
+  font: 12px var(--ui);
+  color: var(--red);
+}
+@media (max-width: 760px) {
+  .sticky-model {
+    height: 390px;
+  }
+  .system-articles article {
+    scroll-margin-top: 380px;
+  }
+  .system-controls {
+    max-width: 340px;
+    margin: auto;
+  }
+  .team-model-showcase {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+  .team-model-view {
+    height: 340px;
+  }
+  .team-model-copy h2 {
+    font-size: 40px;
+  }
+}
